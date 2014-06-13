@@ -154,11 +154,11 @@ FSM.prototype.processQueue = function() {
     return this._missing(eventName, params);
   }
 
-  this.queuePromise = new Promise(function(resolve) {
+  this.queuePromise = Promise.bind(this)
+  .then(function() {
     this.events.willEmit(eventName, params);
-    resolve(this.current[eventName].call(this.current, params));
-  }.bind(this))
-  .bind(this)
+    return this.current[eventName].call(this.current, params);
+  })
   .then(function(stateName) {
     var willTransition = true;
 

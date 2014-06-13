@@ -274,17 +274,20 @@ describe('FSM', function() {
         fsm.emit(startEvent);
         fsm.emit(nextEvent);
 
-        assert.ok(state[startEvent].called, 'first event called on first state');
-        assert.notOk(state[nextEvent].called, 'next event not yet called on first state');
-
         return Promise.delay(10)
         .then(function() {
-          assert.ok(state[nextEvent].called, 'next event called on first state');
+          assert.ok(state[startEvent].called, 'first event called on first state');
+          assert.notOk(state[nextEvent].called, 'next event not yet called on first state');
+          startDefer.resolve();
+          nextDefer.resolve();
+
+          return Promise.delay(10)
+          .then(function() {
+            assert.ok(state[nextEvent].called, 'next event called on first state');
+          })
         })
       }) 
       .then(done).catch(done);
-      startDefer.resolve();
-      nextDefer.resolve();
     })
 
     it('should process queued events even if one is missing', function(done) {
@@ -327,24 +330,29 @@ describe('FSM', function() {
       initFsm().then(function() {
         fsm.emit(startEvent);
         fsm.emit(nextEvent);
-
-        assert.ok(state[startEvent].called, 'first event called on first state');
-        assert.notOk(state[nextEvent].called, 'next event never called on first state');
-        assert.notOk(newState[startEvent].called, 'first event never called on second state');
-        assert.notOk(newState[nextEvent].called, 'next event not yet called on second state');
-
+        
         return Promise.delay(10)
         .then(function() {
+          assert.ok(state[startEvent].called, 'first event called on first state');
           assert.notOk(state[nextEvent].called, 'next event never called on first state');
           assert.notOk(newState[startEvent].called, 'first event never called on second state');
-          assert.ok(newState[nextEvent].called, 'next event called on second state');
+          assert.notOk(newState[nextEvent].called, 'next event not yet called on second state');
+
+          startDefer.resolve(newState.name);
+          nextDefer.resolve();
+          state._leave.resolve();
+          newState._enter.resolve();
+
+          return Promise.delay(10)
+          .then(function() {
+
+            assert.notOk(state[nextEvent].called, 'next event never called on first state');
+            assert.notOk(newState[startEvent].called, 'first event never called on second state');
+            assert.ok(newState[nextEvent].called, 'next event called on second state');
+          })
         })
       }) 
       .then(done).catch(done);
-      startDefer.resolve(newState.name);
-      nextDefer.resolve();
-      state._leave.resolve();
-      newState._enter.resolve();
     });
   })
 
